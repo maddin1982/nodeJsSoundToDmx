@@ -1,0 +1,2 @@
+node soundtodmx.js
+pause;

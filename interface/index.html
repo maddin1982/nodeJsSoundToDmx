@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Remote</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jquery-ui.min.css"/>
+		<style>
+			#spectrum{
+				height: 200px;
+				background: #eee;
+				width:100%;
+			}
+
+	
+			.slider,.slider_threshold {
+				width: 95%;
+				height:30px;
+				background:#ddd;
+				margin:10px;
+			}
+			
+			.red{
+				background:#F67F7F;
+			}
+			.green{
+				background:#4FD253;
+			}
+			.blue{
+				background:#59B9E5;
+			}		
+		</style>
+		<!-- socket io -->
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="jquery-2.1.1.min.js"></script>
+		<script src="jquery-ui.min.js"></script>
+		<script src="jquery.ui.touch-punch.min.js"></script>
+		<script>
+		var io = io.connect();
+
+		$(function() {
+		
+			//threshold range slider
+			$( ".slider_threshold" ).slider({
+			      range: true,
+				  min: 0,
+				  max: 512,
+				  values: [ 10, 500 ],
+				  slide: function( event, ui ) {
+					var obj={};
+					 obj.minr= $("#slider_threshold_r").slider( "values")[0];
+					 obj.maxr= $("#slider_threshold_r").slider( "values")[1];
+					  obj.ming= $("#slider_threshold_g").slider( "values")[0];
+					 obj.maxg= $("#slider_threshold_g").slider( "values")[1];
+					  obj.minb= $("#slider_threshold_b").slider( "values")[0];
+					 obj.maxb= $("#slider_threshold_b").slider( "values")[1];
+					 obj.minamp= $("#slider_threshold_amp").slider( "values")[0];
+					 obj.maxamp= $("#slider_threshold_amp").slider( "values")[1];
+					 io.emit("ranges", obj)
+				  }
+			})
+			
+			$( ".slider" ).slider({min:0,max:255});
+			//$( "#slider_w"  ).slider( "option", "max", 1 );
+			$( ".slider" ).on( "slide", function( event, ui ) {	
+
+				var r = $( "#slider_r" ).slider( "option", "value" );
+				var g = $( "#slider_g" ).slider( "option", "value" );
+				var b = $( "#slider_b" ).slider( "option", "value" );
+				var w = $( "#slider_w" ).slider( "option", "value" );
+				io.emit("setColor",{r:r,g:g,b:b,w:w});
+			})
+			
+			$( "#slider_brightness" ).on( "slide", function( event, ui ) {	
+				var bright = $( "#slider_brightness" ).slider( "option", "value" );
+				bright = bright/255;
+				io.emit("setBrightness",{"brightness":bright});
+			})
+			
+			var spec = $("#spectrum")
+		
+		  
+		  var canvas=document.getElementById("spectrum");
+		  var ctx=canvas.getContext("2d");
+ 		  io.on('spectrum', function (data) {
+			  ctx.clearRect(0, 0, canvas.width, canvas.height);
+			  
+			  var w = canvas.width/512;
+			  ctx.beginPath()
+			  for(var i=0; i<512-4;i+=4){
+				ctx.rect(i*w,0,w,data[i]*1000);
+					
+			  }
+			  ctx.stroke();
+			  ctx.closePath();
+		  /*
+		   var w = $("#spectrum").width()/512;
+			var bars = $('#spectrum').children();
+			bars.width(w)
+			  for(var i=0; i<512;i++){
+				  //$(bars[i]).height(data[i]*1000)
+				  $(bars[i]).css("height",data[i]*500);
+			  } 
+			  
+			  */
+		  }) 
+		  
+		  $("#audioOn").on("click",function(){
+				io.emit("start")
+		  })
+		  $("#audioOff").on("click",function(){
+				io.emit("stop")
+		  })
+		  
+		});
+		 
+
+		</script>
+	</head>
+	<body>
+		<button id="audioOn" class="ui-button ui-widget ui-corner-all">on</button>
+		<button id="audioOff" class="ui-button ui-widget ui-corner-all">off</button>		
+		<div id="slider_r" class="slider red"></div>
+		<div id="slider_g" class="slider green"></div>
+		<div id="slider_b" class="slider blue"></div>
+		<div id="slider_w" class="slider"></div>
+		<div id="slider_brightness" class="slider"></div>
+		
+		<div id="slider_threshold_r" class="slider_threshold red"></div>
+		<div id="slider_threshold_g" class="slider_threshold green"></div>
+		<div id="slider_threshold_b" class="slider_threshold blue"></div>
+		<div id="slider_threshold_amp" class="slider_threshold"></div>
+		<canvas id="spectrum"></canvas>
+		
+		
+	</body>
+</html>
