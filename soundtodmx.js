@@ -24,8 +24,8 @@ DMX.relayPath = './node_modules/dmxhost/dmxhost-serial-relay.py';
 //----------------------------------------------------
 
 
-var allDevices=[];
-for(var i=0;i<countDevices;i++){
+var allDevices = [];
+for (var i = 0; i < countDevices; i++) {
 	allDevices.push(i);
 }
 
@@ -66,16 +66,15 @@ engine.setOptions({
 var dmxManager = new DMXManager();
 dmxManager.initialize();
 
-
-var config =  {
+var config = {
 	"thresholdRMin" : 0,
 	"thresholdRMax" : 50,
 	"thresholdGMin" : 51,
 	"thresholdGMax" : 100,
 	"thresholdBMin" : 101,
 	"thresholdBMax" : 512,
-    "thresholdAmpMin" : 0,
-	"thresholdAmpMax" : 512,	
+	"thresholdAmpMin" : 0,
+	"thresholdAmpMax" : 512,
 	"globalBrightness" : 1
 }
 
@@ -93,9 +92,10 @@ setTimeout(function () {
 	//thresholds for fft array (512 values), for calculation of r g b values
 
 
-		//max amplitude
-		var maxAmplitude = 1;
+	//max amplitude
+	var maxAmplitude = 1;
 
+	
 	//read buffer every 30ms
 	setInterval(function () {
 		//get soundbuffer
@@ -107,14 +107,13 @@ setTimeout(function () {
 
 		if (applySoundInput) {
 
-			var length = spectrum.length;
-
 			high = 0;
 			med = 0;
 			low = 0;
 
 			var maxValue = 0;
 			var sumValue = 0;
+			var length = spectrum.length;
 
 			for (var i = config.thresholdRMin; i < config.thresholdRMax; i++) {
 				low += spectrum[i];
@@ -125,7 +124,7 @@ setTimeout(function () {
 			for (var i = config.thresholdBMin; i < config.thresholdBMax; i++) {
 				high += spectrum[i];
 			}
-			for (var i = config.thresholdAmpMin; i < config.thresholdAmpMax; i++  ) {
+			for (var i = config.thresholdAmpMin; i < config.thresholdAmpMax; i++) {
 				maxValue = maxValue < spectrum[i] ? spectrum[i] : maxValue;
 				sumValue += spectrum[i];
 			}
@@ -146,44 +145,46 @@ setTimeout(function () {
 			val_med = Math.min(220, Math.floor((val_med * 0.9) + (0.1 * newval_med)));
 			val_high = Math.min(220, Math.floor((val_high * 0.9) + (0.1 * newval_high)));
 
-			app.io.broadcast('colors', [val_low, val_med, val_high]);
-
 			//console.log("low:"+val_low+" med:"+val_med+" hight:"+val_high)
-			
+
 			devicesToUpdate = Math.round((sumValue / maxAmplitude) * countDevices);
-			
-			var devices=[];
-			for(var i=0;i<devicesToUpdate;i++){
+
+			var devices = [];
+			for (var i = 0; i < devicesToUpdate; i++) {
 				devices.push(i);
 			}
 			setColor(val_low, val_med, val_high, 0, devices, true)
 		}
 	}, 30)
 
-	
-	var oldcolors =[];
-	for (var i = 0; i < countDevices*4; i++) {
+	var oldcolors = [];
+	for (var i = 0; i < countDevices * 4; i++) {
 		oldcolors.push(0);
 	}
 	
+	
+	/*
+	* sets the colors
+	* r,g,b  - number colors 0-255
+	* devices - number of devices to update 0 - x in bus are updated
+	* disableothers - boolean tells if others are set to black
+	*/
+	
 	var setColor = function (r, g, b, w, devices, disableothers) {
-		//console.log("amplitude "+amplitude)
-		//console.log("maxAmplitude "+maxAmplitude)
 		
-		r=Math.floor(r*globalBrightness);
-		g=Math.floor(g*globalBrightness);
-		b=Math.floor(b*globalBrightness);
-		w=Math.floor(w*globalBrightness);
-		
-		//console.log("devicesToUpdate "+devicesToUpdate)
+		r = Math.floor(r * config.globalBrightness);
+		g = Math.floor(g * config.globalBrightness);
+		b = Math.floor(b * config.globalBrightness);
+		w = Math.floor(w * config.globalBrightness);
+
 		var colors = [];
 		for (var i = 0; i < countDevices; i++) {
-			if(devices.indexOf(i)>-1){
+			if (devices.indexOf(i) > -1) {
 				colors.push(r);
 				colors.push(g);
 				colors.push(b);
 				colors.push(w);
-			} else if(disableothers){
+			} else if (disableothers) {
 				colors.push(1);
 				colors.push(1);
 				colors.push(1);
@@ -191,13 +192,19 @@ setTimeout(function () {
 			}
 		}
 
-		for (var i = 0; i < countDevices*4; i++) {
-			colors[i]=Math.floor(oldcolors[i]*0.1+ colors[i]*0.9);
+		for (var i = 0; i < countDevices * 4; i++) {
+			colors[i] = Math.floor(oldcolors[i] * 0.1 + colors[i] * 0.9);
 		}
 		oldcolors = colors;
-		dmxManager.send(colors)
+		dmxManager.send(colors);
+		app.io.broadcast('colors', colors);
 	}
 
+	
+	/*
+	* Communication with frontend
+	*/
+	
 	app.http().io();
 	app.use(express.static(__dirname + '/interface'));
 
@@ -212,17 +219,17 @@ setTimeout(function () {
 		config.thresholdBMax = req.data.maxb;
 		config.thresholdAmpMax = req.data.maxamp;
 		config.thresholdAmpMin = req.data.minamp;
-		
+
 	})
 
 	app.io.route('setColor', function (req) {
-		setColor(req.data.r, req.data.g, req.data.b, req.data.w,allDevices)
+		setColor(req.data.r, req.data.g, req.data.b, req.data.w, allDevices)
 	})
-	
+
 	app.io.route('setBrightness', function (req) {
 		config.globalBrightness = req.data.brightness;
 	})
-	
+
 	app.io.route('stop', function (req) {
 		console.log("stop");
 		applySoundInput = false;

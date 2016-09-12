@@ -9,7 +9,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "dmxhost": "^0.1.0",
     "express.io": "^1.1.13",
 	"fourier-transform": "^1.0.2",
 	"node-core-audio": "^0.5.0",

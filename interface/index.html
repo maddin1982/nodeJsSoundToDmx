@@ -12,7 +12,12 @@
 				background: #eee;
 				width:100%;
 			}
-
+			
+			#colors{
+				height: 100px;
+				width:100%;
+				background: #eef;
+			}
 	
 			.slider,.slider_threshold {
 				width: 95%;
@@ -83,6 +88,7 @@
 		  
 		  var canvas=document.getElementById("spectrum");
 		  var ctx=canvas.getContext("2d");
+		  
  		  io.on('spectrum', function (data) {
 			  ctx.clearRect(0, 0, canvas.width, canvas.height);
 			  
@@ -94,17 +100,25 @@
 			  }
 			  ctx.stroke();
 			  ctx.closePath();
-		  /*
-		   var w = $("#spectrum").width()/512;
-			var bars = $('#spectrum').children();
-			bars.width(w)
-			  for(var i=0; i<512;i++){
-				  //$(bars[i]).height(data[i]*1000)
-				  $(bars[i]).css("height",data[i]*500);
-			  } 
-			  
-			  */
 		  }) 
+		  
+		  var canvas_colors=document.getElementById("colors");
+		  var ctx_colors=canvas_colors.getContext("2d");
+		  
+		  io.on('colors', function (data) {
+			ctx_colors.clearRect(0, 0, canvas.width, canvas.height);
+			ctx_colors.beginPath()
+			var w = (canvas_colors.width*4)/data.length;
+			var h = (canvas_colors.height)
+			for(var i=0; i< data.length;i+=4){
+				ctx_colors.fillStyle="rgb("+data[i]+","+data[i+1]+","+data[i+2]+")";
+				ctx_colors.fillRect((i/4)*w,0,w-1,h);
+				console.log("hey")
+			}
+			ctx_colors.stroke();
+			ctx_colors.closePath();
+		  })
+		  
 		  
 		  $("#audioOn").on("click",function(){
 				io.emit("start")
@@ -132,7 +146,7 @@
 		<div id="slider_threshold_b" class="slider_threshold blue"></div>
 		<div id="slider_threshold_amp" class="slider_threshold"></div>
 		<canvas id="spectrum"></canvas>
-		
+		<canvas id="colors"></canvas>
 		
 	</body>
 </html>
